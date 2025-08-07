@@ -1,28 +1,24 @@
 import pandas as pd
-from bpe_tokenizer import BPETokenizer
+from tokenizers import Tokenizer
+import os
 
 # Load dataset
 data = pd.read_csv("Dataset/processed/train.csv")
-english_sentences = data["english"].astype(str).tolist()
-igbo_sentences = data["igbo"].astype(str).tolist()
+data["english"] = data["english"].astype(str).fillna("")
+data["igbo"] = data["igbo"].astype(str).fillna("")
 
-# Train English tokenizer
-print("Training tokenizer on English sentences...")
-tokenizer_en = BPETokenizer(vocab_size=1000)
-tokenizer_en.train(english_sentences)
+# Load trained tokenizers
+tokenizer_en = Tokenizer.from_file("tokenizers/english_tokenizer.json")
+tokenizer_ig = Tokenizer.from_file("tokenizers/igbo_tokenizer.json")
 
-# Train Igbo tokenizer
-print("Training tokenizer on Igbo sentences...")
-tokenizer_ig = BPETokenizer(vocab_size=1000)
-tokenizer_ig.train(igbo_sentences)
+# Apply tokenization
+print("Tokenizing English sentences...")
+data["english_tokens"] = data["english"].apply(lambda x: tokenizer_en.encode(x).tokens)
 
-# Tokenize sentences
-print("Encoding English sentences...")
-data["english_tokens"] = [tokenizer_en.encode_sentence(text) for text in english_sentences]
+print("Tokenizing Igbo sentences...")
+data["igbo_tokens"] = data["igbo"].apply(lambda x: tokenizer_ig.encode(x).tokens)
 
-print("Encoding Igbo sentences...")
-data["igbo_tokens"] = [tokenizer_ig.encode_sentence(text) for text in igbo_sentences]
-
-# Save to CSV
-data.to_csv("Dataset/processed/train_tokenized.csv", index=False)
-print("✅ Tokenized data saved to Dataset/processed/train_tokenized.csv")
+# Save output
+output_path = "Dataset/processed/train_tokenized_hf.csv"
+data.to_csv(output_path, index=False)
+print(f"✅ Tokenized data saved to {output_path}")
